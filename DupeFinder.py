@@ -6,6 +6,8 @@ import glob
 import shutil
 import multiprocessing
 
+import math
+
 
 def generate_file_md5(filepath, blocksize=64*2**20):
     # function to take a file, and stream it bit by bit to calculate the md5 rather than loading HUGE file into ram
@@ -31,6 +33,8 @@ class Ui_Dialog(object):
     inFolder = ""
     outFolder = ""
 
+
+
     def __init__(self, parent=None, **kwargs):
 
         # Install the custom output stream for PyQt5
@@ -48,26 +52,6 @@ class Ui_Dialog(object):
         cursor.insertText(text)
         self.plainTextEdit.setTextCursor(cursor)
         self.plainTextEdit.ensureCursorVisible()
-
-    @staticmethod
-    def checker(path, moveto):
-        files = []
-
-        for file in glob.glob(path + "*.*"):
-            files.append(file)
-        # keep a map of md5 hashes to quickly find duplicates if we have seen them before
-        md5s = {}
-        for file in files:
-
-            md5_returned = generate_file_md5(file)
-            print(file[len(path):] + " "+ md5_returned)
-
-            if md5_returned in md5s:
-                print('moving dupe to ' + moveto + file[len(path):])
-
-                shutil.move(file, moveto + file[len(path):])
-            else:
-                md5s[md5_returned] = file
 
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -107,18 +91,57 @@ class Ui_Dialog(object):
         self.output.setText(_translate("Dialog", "Output folder"))
 
     def runChecker(self):
-        self.checker(Ui_Dialog.inFolder, Ui_Dialog.outFolder)
+        # self.checker(Ui_Dialog.inFolder, Ui_Dialog.outFolder)
+        files = []
+        path = self.inFolder
+        nprocs = 4
+        for file in glob.glob(path + "*.*"):
+            files.append(file)
+
+        chunksize = int(math.ceil(len(files) / float(nprocs)))
+        procs = []
+        out_q = multiprocessing.SimpleQueue()
+
+        for i in range(nprocs):
+            p = multiprocessing.Process(
+                target=checker,
+                args=(files[chunksize * i:chunksize * (i + 1)], out_q, path))
+            procs.append(p)
+            p.start()
+
+        map = {}
+        lists = []
+
+        for x in range(4):
+            lists.append(out_q.get())
+
+        for x in range(4):
+            for i in lists[x]:
+                if str(i[0:16]) in map:
+                    file = i[33:]
+                    out = self.outFolder + i[33+len(self.inFolder):]
+                    print('moving dupe to ' + self.outFolder + str(i[16:]))
+                    shutil.move(file, out)
+                else:
+                    map[i[0:16]] = i[16:]
 
     def inputFolderSelect(self):
         Ui_Dialog.inFolder = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory")+"/")
         self.startpath.setText(Ui_Dialog.inFolder)
 
-
-
     def outputFolderSelect(self):
         Ui_Dialog.outFolder = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory")+"/")
         self.wheretopath.setText(Ui_Dialog.outFolder)
 
+
+def checker(files, inQ, path):
+    # push a list of file:md5 to shared queue
+    md5s = []
+    for file in files:
+
+        md5_returned = generate_file_md5(file)
+        md5s.append(md5_returned + " " + file)
+    inQ.put(md5s)
 
 if __name__ == "__main__":
     import sys
