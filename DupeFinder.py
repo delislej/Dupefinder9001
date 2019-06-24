@@ -5,7 +5,7 @@ import hashlib
 import glob
 import shutil
 import multiprocessing
-
+import sys
 import math
 
 
@@ -147,7 +147,7 @@ def checker(files, inQ, path):
     inQ.put(md5s)
 
 if __name__ == "__main__":
-    import sys
+    multiprocessing.freeze_support()
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
