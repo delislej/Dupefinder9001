@@ -27,6 +27,9 @@ class EmittingStream(QtCore.QObject):
 
     def write(self, text):
         self.textWritten.emit(str(text))
+        
+    def flush(self)
+        pass
 
 
 class Ui_Dialog(object):
