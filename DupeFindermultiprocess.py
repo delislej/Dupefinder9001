@@ -96,7 +96,13 @@ class Ui_Dialog(object):
     def runChecker(self):
         # self.checker(Ui_Dialog.inFolder, Ui_Dialog.outFolder)
         files = []
-        path = self.inFolder
+        if len(sys.argv) == 1:
+            path = self.inFolder
+            outpath = self.outFolder
+        else:
+            path = sys.argv[1] + "/"
+            outpath = sys.argv[2] + "/"
+
         nprocs = multiprocessing.cpu_count()
         for file in glob.glob(path + "*.*"):
             files.append(file)
@@ -122,8 +128,8 @@ class Ui_Dialog(object):
             for i in lists[x]:
                 if str(i[0:16]) in map:
                     file = i[33:]
-                    out = self.outFolder + i[33+len(self.inFolder):]
-                    print('moving dupe to ' + self.outFolder + str(i[16:]))
+                    out = outpath + i[33+len(path):]
+                    print('moving dupe to ' + outpath + str(i[16:]))
                     shutil.move(file, out)
                 else:
                     map[i[0:16]] = i[16:]
@@ -152,5 +158,8 @@ if __name__ == "__main__":
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
-    Dialog.show()
+    if len(sys.argv) == 1:
+        Dialog.show()
+    else:
+        ui.runChecker()
     sys.exit(app.exec_())
