@@ -1,14 +1,29 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QRunnable, QThreadPool
 import hashlib
 import glob
 import shutil
 import multiprocessing
 import sys
 import math
+import time
 
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+
+    def run(self):
+
+        # Initialise the runner function with passed args, kwargs.
+        
+        self.fn(*self.args, **self.kwargs)
 
 def generate_file_md5(filepath, blocksize=64*2**20):
     # function to take a file, and stream it bit by bit to calculate the md5 rather than loading HUGE file into ram
@@ -38,14 +53,27 @@ class Ui_Dialog(object):
     outFolder = ""
 
     def __init__(self, parent=None, **kwargs):
-
+        self.threadpool = QThreadPool()
         # Install the custom output stream for PyQt5
         if len(sys.argv) == 1:
             sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
+
+
     def __del__(self):
         # Restore sys.stdout
         sys.stdout = sys.__stdout__
+
+    def start(self):
+        print("starting")
+        self.runChecker()
+        print("finished")
+
+    def threader(self):
+        # Pass the function to execute
+        worker = Worker(self.start)
+        # Execute
+        self.threadpool.start(worker)
 
     def normalOutputWritten(self, text):
         """Append text to the QTextEdit."""
@@ -80,7 +108,7 @@ class Ui_Dialog(object):
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
-        self.pushButton.clicked.connect(self.runChecker)
+        self.pushButton.clicked.connect(self.start)
         self.input.clicked.connect(self.inputFolderSelect)
         self.output.clicked.connect(self.outputFolderSelect)
 
@@ -94,7 +122,6 @@ class Ui_Dialog(object):
         self.output.setText(_translate("Dialog", "Output folder"))
 
     def runChecker(self):
-        # self.checker(Ui_Dialog.inFolder, Ui_Dialog.outFolder)
         files = []
         if len(sys.argv) == 1:
             path = self.inFolder
@@ -114,7 +141,7 @@ class Ui_Dialog(object):
         for i in range(nprocs):
             p = multiprocessing.Process(
                 target=checker,
-                args=(files[chunksize * i:chunksize * (i + 1)], out_q, path))
+                args=(files[chunksize * i:chunksize * (i + 1)], out_q))
             procs.append(p)
             p.start()
 
@@ -143,7 +170,7 @@ class Ui_Dialog(object):
         self.wheretopath.setText(Ui_Dialog.outFolder)
 
 
-def checker(files, inQ, path):
+def checker(files, inQ):
     # push a list of file:md5 to shared queue
     md5s = []
     for file in files:
