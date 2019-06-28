@@ -8,7 +8,7 @@ import shutil
 import multiprocessing
 import sys
 import math
-import time
+
 
 class Worker(QRunnable):
     def __init__(self, fn, *args, **kwargs):
@@ -22,7 +22,7 @@ class Worker(QRunnable):
     def run(self):
 
         # Initialise the runner function with passed args, kwargs.
-        
+
         self.fn(*self.args, **self.kwargs)
 
 def generate_file_md5(filepath, blocksize=64*2**20):
@@ -108,7 +108,7 @@ class Ui_Dialog(object):
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
-        self.pushButton.clicked.connect(self.start)
+        self.pushButton.clicked.connect(self.threader)
         self.input.clicked.connect(self.inputFolderSelect)
         self.output.clicked.connect(self.outputFolderSelect)
 
@@ -155,7 +155,7 @@ class Ui_Dialog(object):
             for i in lists[x]:
                 if str(i[0:16]) in map:
                     file = i[33:]
-                    out = outpath + i[32+len(path):]
+                    out = outpath + i[33+len(path):]
                     print('moving dupe to ' + out)
                     shutil.move(file, out)
                 else:
@@ -185,12 +185,9 @@ if __name__ == "__main__":
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
-    timer = QTimer()
-    timer.timeout.connect(lambda: None)
-    timer.start(100)
     if len(sys.argv) == 1:
         Dialog.show()
     else:
         ui.runChecker()
     sys.exit(app.exec_())
-    exit()
+
