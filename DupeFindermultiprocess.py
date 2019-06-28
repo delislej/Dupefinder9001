@@ -25,16 +25,21 @@ class Worker(QRunnable):
 
         self.fn(*self.args, **self.kwargs)
 
+
 def generate_file_md5(filepath, blocksize=64*2**20):
-    # function to take a file, and stream it bit by bit to calculate the md5 rather than loading HUGE file into ram
+    # function to take a file, and stream it per 10mbit to calculate the md5 rather than loading HUGE file into ram
     m = hashlib.md5()
-    with open(filepath, "rb") as f:
-        while True:
-            buf = f.read(blocksize)
-            if not buf:
-                break
-            m.update( buf )
-    return m.hexdigest()
+    try:
+        with open(filepath, "rb") as f:
+            while True:
+                buf = f.read(blocksize)
+                if not buf:
+                    break
+                m.update(buf)
+        return m.hexdigest()
+    except IOError:
+        print("FILEIO error!")
+        return 0
 
 
 class EmittingStream(QtCore.QObject):
@@ -87,21 +92,37 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(587, 418)
+
+        self.coresSelector = QtWidgets.QSpinBox(Dialog)
+        self.coresSelector.setGeometry(QtCore.QRect(500, 70, 42, 22))
+        self.coresSelector.setMinimum(1)
+        self.coresSelector.setMaximum(multiprocessing.cpu_count()-1)
+        self.coresSelector.setObjectName("spinBox")
+
+        self.label = QtWidgets.QLabel(Dialog)
+        self.label.setGeometry(QtCore.QRect(500, 50, 47, 13))
+        self.label.setObjectName("label")
+
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(230, 380, 75, 23))
         self.pushButton.setObjectName("pushButton")
+
         self.plainTextEdit = QtWidgets.QPlainTextEdit(Dialog)
         self.plainTextEdit.setGeometry(QtCore.QRect(30, 20, 461, 131))
         self.plainTextEdit.setObjectName("plainTextEdit")
+
         self.startpath = QtWidgets.QLineEdit(Dialog)
         self.startpath.setGeometry(QtCore.QRect(50, 230, 321, 20))
         self.startpath.setObjectName("startpath")
+
         self.wheretopath = QtWidgets.QLineEdit(Dialog)
         self.wheretopath.setGeometry(QtCore.QRect(50, 280, 321, 20))
         self.wheretopath.setObjectName("wheretopath")
+
         self.input = QtWidgets.QPushButton(Dialog)
         self.input.setGeometry(QtCore.QRect(380, 230, 75, 23))
         self.input.setObjectName("input")
+
         self.output = QtWidgets.QPushButton(Dialog)
         self.output.setGeometry(QtCore.QRect(380, 280, 75, 23))
         self.output.setObjectName("output")
@@ -120,6 +141,7 @@ class Ui_Dialog(object):
         self.wheretopath.setText(_translate("Dialog", "Please select an output folder"))
         self.input.setText(_translate("Dialog", "select folder"))
         self.output.setText(_translate("Dialog", "Output folder"))
+        self.label.setText(_translate("Dialog", "Cores"))
 
     def runChecker(self):
         files = []
@@ -130,7 +152,8 @@ class Ui_Dialog(object):
             path = sys.argv[1] + "/"
             outpath = sys.argv[2] + "/"
 
-        nprocs = multiprocessing.cpu_count()
+        nprocs = self.coresSelector.value()
+        print(nprocs)
         for file in glob.glob(path + "*.*"):
             files.append(file)
 
@@ -178,6 +201,7 @@ def checker(files, inQ):
         md5_returned = generate_file_md5(file)
         md5s.append(md5_returned + " " + file)
     inQ.put(md5s)
+
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()

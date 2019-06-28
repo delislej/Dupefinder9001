@@ -34,9 +34,9 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.12
+import QtQuick 2.1
 import HelperWidgets 2.0
-import QtQuick.Layouts 1.12
+import QtQuick.Layouts 1.1
 
 Column {
     width: parent.width
@@ -112,7 +112,7 @@ Column {
             }
             SecondColumnLayout {
                 ComboBox {
-                    backendValue: backendValues.snapMode
+                    backendValue: backendValues.orientation
                     model: [ "NoSnap", "SnapOnRelease", "SnapAlways" ]
                     scope: "Slider"
                     Layout.fillWidth: true

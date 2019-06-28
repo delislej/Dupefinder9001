@@ -68,29 +68,31 @@ Item {
 
     anchors.fill: parent
 
-    Timer {
-        id: layoutTimer
-        interval: 0;
-        onTriggered: {
+    property bool recursionGuard: false
+
+    function doLayout() {
+        if (!recursionGuard) {
+            recursionGuard = true
             blockUpdates = true;
             scrollHelper.contentWidth = flickableItem !== null ? flickableItem.contentWidth : 0
             scrollHelper.contentHeight = flickableItem !== null ? flickableItem.contentHeight : 0
             scrollHelper.availableWidth = viewport.width
             scrollHelper.availableHeight = viewport.height
             blockUpdates = false;
+            recursionGuard = false
         }
     }
 
     Connections {
         target: viewport
-        onWidthChanged: layoutTimer.running = true
-        onHeightChanged: layoutTimer.running = true
+        onWidthChanged: doLayout()
+        onHeightChanged: doLayout()
     }
 
     Connections {
         target: flickableItem
-        onContentWidthChanged: layoutTimer.running = true
-        onContentHeightChanged: layoutTimer.running = true
+        onContentWidthChanged: doLayout()
+        onContentHeightChanged: doLayout()
         onContentXChanged: {
             hscrollbar.flash()
             vscrollbar.flash()
