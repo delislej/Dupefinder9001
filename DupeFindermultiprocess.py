@@ -145,6 +145,7 @@ class Ui_Dialog(object):
 
     def runChecker(self):
         files = []
+        dupes = 0
         if len(sys.argv) == 1:
             path = self.inFolder
             outpath = self.outFolder
@@ -153,10 +154,10 @@ class Ui_Dialog(object):
             outpath = sys.argv[2] + "/"
 
         nprocs = self.coresSelector.value()
-        print(nprocs)
+        print("Using " + str(nprocs) + " cores")
         for file in glob.glob(path + "*.*"):
             files.append(file)
-
+        print("Found " + str(len(files)) + " files")
         chunksize = int(math.ceil(len(files) / float(nprocs)))
         procs = []
         out_q = multiprocessing.SimpleQueue()
@@ -177,12 +178,14 @@ class Ui_Dialog(object):
         for x in range(nprocs):
             for i in lists[x]:
                 if str(i[0:16]) in map:
+                    dupes += 1
                     file = i[33:]
                     out = outpath + i[33+len(path):]
                     print('moving dupe to ' + out)
                     shutil.move(file, out)
                 else:
                     map[i[0:16]] = i[16:]
+        print("found and moved " +str(dupes) + " duplicates")
 
     def inputFolderSelect(self):
         Ui_Dialog.inFolder = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory")+"/")
