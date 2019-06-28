@@ -1,6 +1,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QTimer
 import hashlib
 import glob
 import shutil
@@ -36,12 +37,11 @@ class Ui_Dialog(object):
     inFolder = ""
     outFolder = ""
 
-
-
     def __init__(self, parent=None, **kwargs):
 
         # Install the custom output stream for PyQt5
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        if len(sys.argv) == 1:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
     def __del__(self):
         # Restore sys.stdout
@@ -128,8 +128,8 @@ class Ui_Dialog(object):
             for i in lists[x]:
                 if str(i[0:16]) in map:
                     file = i[33:]
-                    out = outpath + i[33+len(path):]
-                    print('moving dupe to ' + outpath + str(i[16:]))
+                    out = outpath + i[32+len(path):]
+                    print('moving dupe to ' + out)
                     shutil.move(file, out)
                 else:
                     map[i[0:16]] = i[16:]
@@ -158,8 +158,12 @@ if __name__ == "__main__":
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
+    timer = QTimer()
+    timer.timeout.connect(lambda: None)
+    timer.start(100)
     if len(sys.argv) == 1:
         Dialog.show()
     else:
         ui.runChecker()
     sys.exit(app.exec_())
+    exit()
