@@ -15,7 +15,6 @@ class Worker(QRunnable):
 
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
-        QtCore.QObject.__init__(self)
         # Store constructor arguments (re-used for processing)
         self.fn = fn
         self.args = args
@@ -43,24 +42,33 @@ def generate_file_md5(filepath, blocksize=64*2**20):
 
 
 def fileChecker(inp, outp, cores, doneq):
+    # make our list of files and set duplicates to 0
     files = []
     dupes = 0
+    # detect GUI or CLI and set parameters
     if len(sys.argv) == 1:
         path = inp
         outpath = outp
+        nprocs = cores
     else:
         path = sys.argv[1] + "/"
         outpath = sys.argv[2] + "/"
+        if sys.argv[3] > multiprocessing.cpu_count() or sys.argv[3] < 1 :
+            nprocs = 1
+        else:
+            nprocs = sys.argv[3]
 
-    nprocs = cores
+    # Find all of the files using glob
     for file in glob.glob(path + "*.*"):
         files.append(file)
     print("Found " + str(len(files)) + " files" + "\nchecking and moving files! this might take some time.")
 
+    # split up work based on the number of cores selected
     chunksize = int(math.ceil(len(files) / float(nprocs)))
     procs = []
     out_q = multiprocessing.SimpleQueue()
 
+    # spawn child processes to crunch our md5s for each file
     for i in range(nprocs):
         p = multiprocessing.Process(target=checker, args=(files[chunksize * i:chunksize * (i + 1)], out_q, doneq, len(files)))
         procs.append(p)
@@ -68,6 +76,7 @@ def fileChecker(inp, outp, cores, doneq):
 
     md5map = {}
     lists = []
+    # build list from our child processes
     for x in range(nprocs):
         lists.append(out_q.get())
     for x in range(nprocs):

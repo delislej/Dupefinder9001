@@ -2,3 +2,4 @@
 venv/
 venv/Lib/site-packages/PyQt5/__pycache__/__init__.cpython-37.pyc
 .idea/workspace.xml
+*.xml
