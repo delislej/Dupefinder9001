@@ -15,8 +15,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/DupeFindermultiprocess.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1038">
-              <caret line="262" column="13" selection-start-line="262" selection-start-column="13" selection-end-line="262" selection-end-column="13" />
+            <state relative-caret-position="894">
+              <caret line="230" column="17" lean-forward="true" selection-start-line="230" selection-start-column="17" selection-end-line="230" selection-end-column="17" />
               <folding>
                 <element signature="e#2#44#0" expanded="true" />
               </folding>
@@ -68,6 +68,7 @@
       <find>cores</find>
       <find>50</find>
       <find>done</find>
+      <find>fileChecker</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -194,20 +195,21 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="2576" height="1416" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17130366" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.4964229" weight="0.10132502" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49602544" visible="true" weight="0.10132502" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49918962" weight="0.3987455" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="8" sideWeight="0.4972178" visible="true" weight="0.33359313" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50278217" side_tool="true" visible="true" weight="0.33359313" />
+      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.4972178" weight="0.33359313" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50397456" side_tool="true" visible="true" weight="0.10132502" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32967034" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -220,8 +222,8 @@
     <entry file="file://$PROJECT_DIR$/DupeFinder.py" />
     <entry file="file://$PROJECT_DIR$/DupeFindermultiprocess.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1038">
-          <caret line="262" column="13" selection-start-line="262" selection-start-column="13" selection-end-line="262" selection-end-column="13" />
+        <state relative-caret-position="894">
+          <caret line="230" column="17" lean-forward="true" selection-start-line="230" selection-start-column="17" selection-end-line="230" selection-end-column="17" />
           <folding>
             <element signature="e#2#44#0" expanded="true" />
           </folding>
