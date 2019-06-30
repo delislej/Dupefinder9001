@@ -1,29 +1,32 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTimer, QRunnable, QThreadPool
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSignal, QThread
 import hashlib
 import glob
 import shutil
+import time
 import multiprocessing
 import sys
 import math
 
 
 class Worker(QRunnable):
+
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
+        QtCore.QObject.__init__(self)
         # Store constructor arguments (re-used for processing)
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
 
-
     def run(self):
-
         # Initialise the runner function with passed args, kwargs.
-
         self.fn(*self.args, **self.kwargs)
+
+
+
 
 
 def generate_file_md5(filepath, blocksize=64*2**20):
@@ -40,6 +43,54 @@ def generate_file_md5(filepath, blocksize=64*2**20):
     except IOError:
         print("FILEIO error!")
         return 0
+
+
+def runChecker(inp, outp, cores, doneq):
+    files = []
+    dupes = 0
+    if len(sys.argv) == 1:
+        path = inp
+        outpath = outp
+    else:
+        path = sys.argv[1] + "/"
+        outpath = sys.argv[2] + "/"
+
+    nprocs = cores
+    for file in glob.glob(path + "*.*"):
+        files.append(file)
+    print("Found " + str(len(files)) + " files" + "\nchecking and moving files! this might take some time.")
+
+    chunksize = int(math.ceil(len(files) / float(nprocs)))
+    procs = []
+    out_q = multiprocessing.SimpleQueue()
+
+    for i in range(nprocs):
+        p = multiprocessing.Process(
+        target=checker,
+        args=(files[chunksize * i:chunksize * (i + 1)], out_q, doneq, len(files)))
+        procs.append(p)
+        p.start()
+
+    map = {}
+    lists = []
+    for x in range(nprocs):
+            lists.append(out_q.get())
+
+    for x in range(nprocs):
+        for i in lists[x]:
+
+            if str(i[0:16]) in map:
+                dupes += 1
+                file = i[33:]
+                out = outpath + i[33+len(path):]
+                print('moving dupe to ' + out)
+                shutil.move(file, out)
+                doneq.put(math.ceil(35 / len(files)))
+            else:
+                map[i[0:16]] = i[16:]
+                doneq.put(math.ceil(35 / len(files)))
+    print("found and moved " +str(dupes) + " duplicates")
+    doneq.put(30)
 
 
 class EmittingStream(QtCore.QObject):
@@ -60,8 +111,10 @@ class Ui_Dialog(object):
     def __init__(self, parent=None, **kwargs):
         self.threadpool = QThreadPool()
         # Install the custom output stream for PyQt5
+        self.done_q = multiprocessing.SimpleQueue()
         if len(sys.argv) == 1:
             sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+
 
 
 
@@ -70,15 +123,32 @@ class Ui_Dialog(object):
         sys.stdout = sys.__stdout__
 
     def start(self):
-        print("starting")
-        self.runChecker()
+
+        runChecker(self.inFolder, self.outFolder, self.coresSelector.value(), self.done_q)
         print("finished")
 
     def threader(self):
         # Pass the function to execute
-        worker = Worker(self.start)
+        print("starting")
+        print("Using " + str(self.coresSelector.value()) + " cores")
+        self.worker = Worker(self.start)
         # Execute
-        self.threadpool.start(worker)
+        self.threadpool.start(self.worker)
+        progress = 0
+
+        while progress < 100:
+            if self.done_q.empty():
+                time.sleep(.1)
+            else:
+                progress += self.done_q.get()
+                self.progressBar.setValue(progress)
+        self.progressBar.setValue(100)
+
+
+
+
+
+
 
     def normalOutputWritten(self, text):
         """Append text to the QTextEdit."""
@@ -88,6 +158,10 @@ class Ui_Dialog(object):
         cursor.insertText(text)
         self.plainTextEdit.setTextCursor(cursor)
         self.plainTextEdit.ensureCursorVisible()
+
+    def increase(self):
+
+        self.progressBar.setValue(10+self.progressBar.value())
 
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -127,11 +201,19 @@ class Ui_Dialog(object):
         self.output.setGeometry(QtCore.QRect(380, 280, 75, 23))
         self.output.setObjectName("output")
 
+        self.progressBar = QtWidgets.QProgressBar(Dialog)
+        self.progressBar.setGeometry(QtCore.QRect(130, 340, 300, 23))
+        self.progressBar.setProperty("value", 0)
+        self.progressBar.setObjectName("progressBar")
+
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
         self.pushButton.clicked.connect(self.threader)
         self.input.clicked.connect(self.inputFolderSelect)
         self.output.clicked.connect(self.outputFolderSelect)
+
+
+
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -143,49 +225,7 @@ class Ui_Dialog(object):
         self.output.setText(_translate("Dialog", "Output folder"))
         self.label.setText(_translate("Dialog", "Cores"))
 
-    def runChecker(self):
-        files = []
-        dupes = 0
-        if len(sys.argv) == 1:
-            path = self.inFolder
-            outpath = self.outFolder
-        else:
-            path = sys.argv[1] + "/"
-            outpath = sys.argv[2] + "/"
 
-        nprocs = self.coresSelector.value()
-        print("Using " + str(nprocs) + " cores")
-        for file in glob.glob(path + "*.*"):
-            files.append(file)
-        print("Found " + str(len(files)) + " files")
-        chunksize = int(math.ceil(len(files) / float(nprocs)))
-        procs = []
-        out_q = multiprocessing.SimpleQueue()
-
-        for i in range(nprocs):
-            p = multiprocessing.Process(
-                target=checker,
-                args=(files[chunksize * i:chunksize * (i + 1)], out_q))
-            procs.append(p)
-            p.start()
-
-        map = {}
-        lists = []
-
-        for x in range(nprocs):
-            lists.append(out_q.get())
-
-        for x in range(nprocs):
-            for i in lists[x]:
-                if str(i[0:16]) in map:
-                    dupes += 1
-                    file = i[33:]
-                    out = outpath + i[33+len(path):]
-                    print('moving dupe to ' + out)
-                    shutil.move(file, out)
-                else:
-                    map[i[0:16]] = i[16:]
-        print("found and moved " +str(dupes) + " duplicates")
 
     def inputFolderSelect(self):
         Ui_Dialog.inFolder = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory")+"/")
@@ -196,14 +236,16 @@ class Ui_Dialog(object):
         self.wheretopath.setText(Ui_Dialog.outFolder)
 
 
-def checker(files, inQ):
+def checker(files, inQ, doneq, total):
     # push a list of file:md5 to shared queue
     md5s = []
     for file in files:
-
         md5_returned = generate_file_md5(file)
         md5s.append(md5_returned + " " + file)
+
+        doneq.put(math.ceil(35/total))
     inQ.put(md5s)
+
 
 
 if __name__ == "__main__":
@@ -211,10 +253,12 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()
+
     ui.setupUi(Dialog)
     if len(sys.argv) == 1:
         Dialog.show()
     else:
-        ui.runChecker()
+        ui.threader()
     sys.exit(app.exec_())
+    sys.exit()
 
