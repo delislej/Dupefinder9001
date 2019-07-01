@@ -83,7 +83,7 @@ def fileChecker(inp, outp, cores, doneq):
         # for each process that exists
         for i in lists[x]:
             # Read its list of file:md5 to see if it is in the map
-            if str(i[0:16]) in map:
+            if str(i[0:16]) in md5map:
                 # if found in map, move to duplicate folder, increase duplicate count
                 dupes += 1
                 file = i[33:]
