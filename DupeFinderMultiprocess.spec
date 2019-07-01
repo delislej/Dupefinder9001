@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['DupeFinderMultiprocess.py'],
+a = Analysis(['DupeFindermultiprocess.py'],
              pathex=['C:\\Users\\ninecats\\PycharmProjects\\dupefinder'],
              binaries=[],
              datas=[],
@@ -23,10 +23,10 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='DupeFinderMultiprocess',
+          name='DupeFindermultiprocess',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           runtime_tmpdir=None,
-          console=False )
+          console=True )

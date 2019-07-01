@@ -1,7 +1,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSignal, QThread
+from PyQt5.QtCore import QRunnable, QThreadPool, QTimer
 import hashlib
 import glob
 import shutil
@@ -62,7 +62,7 @@ def fileChecker(inp, outp, cores, doneq):
     # Find all of the files using glob
     for file in glob.glob(path + "*.*"):
         files.append(file)
-    print("Found " + str(len(files)) + " files" + "\nchecking and moving files! this might take some time.")
+    print("Found " + str(len(files)) + " files" + "\nchecking files! this might take some time.")
     doneq.put(35)
     # split up work based on the number of cores selected
     chunksize = int(math.ceil(len(files) / float(nprocs)))
@@ -104,7 +104,10 @@ def fileChecker(inp, outp, cores, doneq):
                     continue
                 else:
                     doneq.put(35 / len(files))
-    print("found and moved " +str(dupes) + " duplicates")
+
+    doneq.put(100)
+    print("found " +str(dupes) + " duplicates, moving files and cleaning up!")
+
 
 
 
@@ -144,21 +147,15 @@ class Ui_Dialog(object):
     def threader(self):
         # make worker thread
         # Pass the function to execute
+        self.progressBar.setValue(0)
         print("starting")
         print("Using " + str(self.coresSelector.value()) + " cores")
         self.worker = Worker(self.start)
         # Execute
         self.threadpool.start(self.worker)
-        progress = 0
-        while progress < 100:
-            if self.done_q.empty():
-                # make sure to not lock the thread by spamming it
-
-                continue
-            else:
-                progress += self.done_q.get()
-                self.progressBar.setValue(progress)
-        self.progressBar.setValue(100)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.updateProgbar)
+        self.timer.start(10)
 
     def normalOutputWritten(self, text):
         # Append text to the QTextEdit.
@@ -217,6 +214,7 @@ class Ui_Dialog(object):
         self.input.clicked.connect(self.inputFolderSelect)
         self.output.clicked.connect(self.outputFolderSelect)
 
+
     def retranslateUi(self, Dialog):
         # text on widgets
         _translate = QtCore.QCoreApplication.translate
@@ -238,17 +236,42 @@ class Ui_Dialog(object):
         Ui_Dialog.outFolder = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory")+"/")
         self.wheretopath.setText(Ui_Dialog.outFolder)
 
+    def updateProgbar(self):
+
+        if self.progressBar.value() >= 99:
+            print("Finished!")
+            self.progressBar.setValue(100)
+            self.timer.stop()
+            return
+        if self.done_q.empty():
+            pass
+        progress = self.done_q.get()
+        if progress == 100:
+            self.progressBar.setValue(100)
+            self.timer.stop()
+            print("finished!")
+            return
+        self.progressBar.setValue((progress+self.progressBar.value()))
+
+
 
 def checker(files, inQ, doneq, total):
     # push a list of dict file:md5 to shared queue
+    prog = 0
     md5s = []
     for file in files:
         md5_returned = generate_file_md5(file)
         md5s.append(md5_returned + " " + file)
+
         if doneq.full():
             pass
         else:
-            doneq.put(35/total)
+            prog += (35/total)
+
+        if prog > 1:
+            doneq.put(prog)
+            prog = 0
+
     inQ.put(md5s)
 
 
