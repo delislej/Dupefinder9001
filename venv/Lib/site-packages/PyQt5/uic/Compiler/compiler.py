@@ -1,6 +1,6 @@
 #############################################################################
 ##
-## Copyright (C) 2016 Riverbank Computing Limited.
+## Copyright (C) 2019 Riverbank Computing Limited.
 ## Copyright (C) 2006 Thorsten Marek.
 ## All right reserved.
 ##
@@ -66,6 +66,7 @@ class UICompiler(UIParser):
         indenter.write("from PyQt5 import QtCore, QtGui, QtWidgets")
         indenter.write("")
 
+        indenter.write("")
         indenter.write("class Ui_%s(object):" % self.uiname)
         indenter.indent()
         indenter.write("def setupUi(self, %s):" % widgetname)
@@ -110,6 +111,7 @@ class UICompiler(UIParser):
         w = self.parse(input_stream, resource_suffix)
 
         indenter = getIndenter()
+        indenter.write("")
         indenter.write("")
 
         self.factory._cpolicy._writeOutImports()

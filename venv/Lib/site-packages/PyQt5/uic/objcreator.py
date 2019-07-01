@@ -149,7 +149,7 @@ class QObjectCreator(object):
         there was an error.
         """
 
-        plugin = open(filename, 'rU')
+        plugin = open(filename)
 
         try:
             exec(plugin.read(), plugin_globals, plugin_locals)

@@ -34,23 +34,22 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.11
-import QtQuick.Controls 2.4
-import QtQuick.Controls.impl 2.4
-import QtQuick.Templates 2.4 as T
+import QtQuick 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Controls.impl 2.12
+import QtQuick.Templates 2.12 as T
 
 T.SpinBox {
     id: control
 
-    implicitWidth: Math.max(background ? background.implicitWidth : 0,
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             contentItem.implicitWidth + 2 * padding +
-                            (up.indicator ? up.indicator.implicitWidth : 0) +
-                            (down.indicator ? down.indicator.implicitWidth : 0))
-    implicitHeight: Math.max(contentItem.implicitHeight + topPadding + bottomPadding,
-                             background ? background.implicitHeight : 0,
-                             up.indicator ? up.indicator.implicitHeight : 0,
-                             down.indicator ? down.indicator.implicitHeight : 0)
-    baselineOffset: contentItem.y + contentItem.baselineOffset
+                            up.implicitIndicatorWidth +
+                            down.implicitIndicatorWidth)
+    implicitHeight: Math.max(implicitContentHeight + topPadding + bottomPadding,
+                             implicitBackgroundHeight,
+                             up.implicitIndicatorHeight,
+                             down.implicitIndicatorHeight)
 
     padding: 6
     leftPadding: padding + (control.mirrored ? (up.indicator ? up.indicator.width : 0) : (down.indicator ? down.indicator.width : 0))

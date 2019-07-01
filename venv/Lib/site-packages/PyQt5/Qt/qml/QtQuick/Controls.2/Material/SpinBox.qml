@@ -34,23 +34,22 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.11
-import QtQuick.Templates 2.4 as T
-import QtQuick.Controls.Material 2.4
-import QtQuick.Controls.Material.impl 2.4
+import QtQuick 2.12
+import QtQuick.Templates 2.12 as T
+import QtQuick.Controls.Material 2.12
+import QtQuick.Controls.Material.impl 2.12
 
 T.SpinBox {
     id: control
 
-    implicitWidth: Math.max(background ? background.implicitWidth : 0,
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             contentItem.implicitWidth +
-                            (up.indicator ? up.indicator.implicitWidth : 0) +
-                            (down.indicator ? down.indicator.implicitWidth : 0))
-    implicitHeight: Math.max(contentItem.implicitHeight + topPadding + bottomPadding,
-                             background ? background.implicitHeight : 0,
-                             up.indicator ? up.indicator.implicitHeight : 0,
-                             down.indicator ? down.indicator.implicitHeight : 0)
-    baselineOffset: contentItem.y + contentItem.baselineOffset
+                            up.implicitIndicatorWidth +
+                            down.implicitIndicatorWidth)
+    implicitHeight: Math.max(implicitContentHeight + topPadding + bottomPadding,
+                             implicitBackgroundHeight,
+                             up.implicitIndicatorHeight,
+                             down.implicitIndicatorHeight)
 
     spacing: 6
     topPadding: 8
@@ -83,8 +82,8 @@ T.SpinBox {
 
     up.indicator: Item {
         x: control.mirrored ? 0 : parent.width - width
-        implicitWidth: 48
-        implicitHeight: 48
+        implicitWidth: control.Material.touchTarget
+        implicitHeight: control.Material.touchTarget
         height: parent.height
         width: height
 
@@ -117,8 +116,8 @@ T.SpinBox {
 
     down.indicator: Item {
         x: control.mirrored ? parent.width - width : 0
-        implicitWidth: 48
-        implicitHeight: 48
+        implicitWidth: control.Material.touchTarget
+        implicitHeight: control.Material.touchTarget
         height: parent.height
         width: height
 
@@ -144,7 +143,7 @@ T.SpinBox {
 
     background: Item {
         implicitWidth: 192
-        implicitHeight: 48
+        implicitHeight: control.Material.touchTarget
 
         Rectangle {
             x: parent.width / 2 - width / 2
