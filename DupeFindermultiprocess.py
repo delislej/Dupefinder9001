@@ -45,6 +45,7 @@ def fileChecker(inp, outp, cores, doneq):
     # make our list of files and set duplicates to 0
     files = []
     dupes = 0
+
     # detect GUI or CLI and set parameters
     if len(sys.argv) == 1:
         path = inp
@@ -66,7 +67,7 @@ def fileChecker(inp, outp, cores, doneq):
     # split up work based on the number of cores selected
     chunksize = int(math.ceil(len(files) / float(nprocs)))
     procs = []
-    out_q = multiprocessing.SimpleQueue()
+    out_q = multiprocessing.Queue()
 
     # spawn child processes to crunch our md5s for each file
     for i in range(nprocs):
@@ -91,12 +92,18 @@ def fileChecker(inp, outp, cores, doneq):
                 out = outpath + i[33+len(path):]
                 shutil.move(file, out)
                 # add some progress to our progress bar
-                doneq.put(35 / len(files))
+                if doneq.full():
+                    continue
+                else:
+                    doneq.put(35 / len(files))
             else:
                 # if not found in map, add to map for quick searching later
                 md5map[i[0:16]] = i[16:]
                 # add some progress to our progress bar
-                doneq.put(35/len(files))
+                if doneq.full():
+                    continue
+                else:
+                    doneq.put(35 / len(files))
     print("found and moved " +str(dupes) + " duplicates")
 
 
@@ -120,7 +127,8 @@ class Ui_Dialog(object):
         self.threadpool = QThreadPool()
         # Install the custom output stream for PyQt5, but nor for CLI
         # create our multiprocess queue to track progress bar amount
-        self.done_q = multiprocessing.SimpleQueue()
+        self.done_q = multiprocessing.Queue()
+
         if len(sys.argv) == 1:
             sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
 
@@ -145,8 +153,8 @@ class Ui_Dialog(object):
         while progress < 100:
             if self.done_q.empty():
                 # make sure to not lock the thread by spamming it
-                
-                pass
+
+                continue
             else:
                 progress += self.done_q.get()
                 self.progressBar.setValue(progress)
@@ -237,7 +245,10 @@ def checker(files, inQ, doneq, total):
     for file in files:
         md5_returned = generate_file_md5(file)
         md5s.append(md5_returned + " " + file)
-        doneq.put(35/total)
+        if doneq.full():
+            pass
+        else:
+            doneq.put(35/total)
     inQ.put(md5s)
 
 
