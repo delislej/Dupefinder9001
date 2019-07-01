@@ -25,7 +25,7 @@ class Worker(QRunnable):
         self.fn(*self.args, **self.kwargs)
 
 
-def generate_file_md5(filepath, blocksize=64*2**20):
+def generate_file_md5(filepath, blocksize=128*2**20):
     # function to take a file, and stream it per 10mbit to calculate the md5 rather than loading HUGE file into ram
     m = hashlib.md5()
     try:
@@ -62,7 +62,7 @@ def fileChecker(inp, outp, cores, doneq):
     for file in glob.glob(path + "*.*"):
         files.append(file)
     print("Found " + str(len(files)) + " files" + "\nchecking and moving files! this might take some time.")
-
+    doneq.put(35)
     # split up work based on the number of cores selected
     chunksize = int(math.ceil(len(files) / float(nprocs)))
     procs = []
@@ -73,6 +73,7 @@ def fileChecker(inp, outp, cores, doneq):
         p = multiprocessing.Process(target=checker, args=(files[chunksize * i:chunksize * (i + 1)], out_q, doneq, len(files)))
         procs.append(p)
         p.start()
+
 
     md5map = {}
     lists = []
@@ -88,17 +89,16 @@ def fileChecker(inp, outp, cores, doneq):
                 dupes += 1
                 file = i[33:]
                 out = outpath + i[33+len(path):]
-                print('moving dupe to ' + out)
                 shutil.move(file, out)
                 # add some progress to our progress bar
-                doneq.put(math.ceil(35 / len(files)))
+                doneq.put(35 / len(files))
             else:
                 # if not found in map, add to map for quick searching later
                 md5map[i[0:16]] = i[16:]
                 # add some progress to our progress bar
-                doneq.put(math.ceil(35 / len(files)))
+                doneq.put(35/len(files))
     print("found and moved " +str(dupes) + " duplicates")
-    doneq.put(30)
+
 
 
 class EmittingStream(QtCore.QObject):
@@ -131,7 +131,7 @@ class Ui_Dialog(object):
     def start(self):
         # function that worker thread executes
         fileChecker(self.inFolder, self.outFolder, self.coresSelector.value(), self.done_q)
-        print("finished")
+
 
     def threader(self):
         # make worker thread
@@ -145,7 +145,8 @@ class Ui_Dialog(object):
         while progress < 100:
             if self.done_q.empty():
                 # make sure to not lock the thread by spamming it
-                time.sleep(.1)
+                
+                pass
             else:
                 progress += self.done_q.get()
                 self.progressBar.setValue(progress)
@@ -236,7 +237,7 @@ def checker(files, inQ, doneq, total):
     for file in files:
         md5_returned = generate_file_md5(file)
         md5s.append(md5_returned + " " + file)
-        doneq.put(math.ceil(35/total))
+        doneq.put(35/total)
     inQ.put(md5s)
 
 
