@@ -148,6 +148,9 @@ class Ui_Dialog(object):
         # make worker thread
         # Pass the function to execute
         self.progressBar.setValue(0)
+        if self.inFolder == "" or self.outFolder == "":
+            print("make sure to select the folders!")
+            return
         print("starting")
         print("Using " + str(self.coresSelector.value()) + " cores")
         self.worker = Worker(self.start)

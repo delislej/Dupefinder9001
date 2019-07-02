@@ -1,5 +1,9 @@
 .idea/
 venv/
+_pycache_/
+build/
+dist/
 venv/Lib/site-packages/PyQt5/__pycache__/__init__.cpython-37.pyc
 .idea/workspace.xml
 *.xml
+__pycache__/DupeFindermultiprocess.cpython-37.pyc
