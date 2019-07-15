@@ -75,7 +75,6 @@ def fileChecker(inp, outp, cores, doneq):
         procs.append(p)
         p.start()
 
-
     md5map = {}
     lists = []
     # build list from our child processes
@@ -93,22 +92,22 @@ def fileChecker(inp, outp, cores, doneq):
                 shutil.move(file, out)
                 # add some progress to our progress bar
                 if doneq.full():
-                    continue
-                else:
-                    doneq.put(35 / len(files))
+                    while doneq.full():
+                        time.sleep(.1)
+                doneq.put(65 / len(files))
             else:
                 # if not found in map, add to map for quick searching later
                 md5map[i[0:16]] = i[16:]
                 # add some progress to our progress bar
                 if doneq.full():
+                    print("full Q")
                     continue
                 else:
-                    doneq.put(35 / len(files))
-
+                    doneq.put(65 / len(files))
+    for p in procs:
+        p.join()
     doneq.put(100)
     print("found " +str(dupes) + " duplicates, moving files and cleaning up!")
-
-
 
 
 class EmittingStream(QtCore.QObject):
@@ -131,6 +130,7 @@ class Ui_Dialog(object):
         # Install the custom output stream for PyQt5, but nor for CLI
         # create our multiprocess queue to track progress bar amount
         self.done_q = multiprocessing.Queue()
+        self.done_q.maxsize = 1024
 
         if len(sys.argv) == 1:
             sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
@@ -241,21 +241,16 @@ class Ui_Dialog(object):
 
     def updateProgbar(self):
 
-        if self.progressBar.value() >= 99:
-            print("Finished!")
-            self.progressBar.setValue(100)
-            self.timer.stop()
-            return
         if self.done_q.empty():
             pass
         progress = self.done_q.get()
-        if progress == 100:
+        if progress+self.progressBar.value() >= 100:
             self.progressBar.setValue(100)
             self.timer.stop()
             print("finished!")
             return
-        self.progressBar.setValue((progress+self.progressBar.value()))
-
+        else:
+            self.progressBar.setValue((progress+self.progressBar.value()))
 
 
 def checker(files, inQ, doneq, total):
@@ -267,9 +262,10 @@ def checker(files, inQ, doneq, total):
         md5s.append(md5_returned + " " + file)
 
         if doneq.full():
-            pass
+            print("full Q!")
+            time.sleep(.1)
         else:
-            prog += (35/total)
+            prog += (65/total)
 
         if prog > 1:
             doneq.put(prog)
