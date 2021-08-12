@@ -2,6 +2,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QRunnable, QThreadPool, QTimer
+from os.path import getsize
 import hashlib
 import glob
 import shutil
@@ -9,6 +10,20 @@ import time
 import multiprocessing
 import sys
 import math
+
+class statsFile():
+    def __init__(self,_totalScanned,_numberOfDupes,_totalMBScanned,_avgMBScanned,_path):
+        self.totalScanned=_totalScanned
+        self.numberOfDupes=_numberOfDupes
+        self.totalMBScanned=_totalMBScanned
+        self.avgMBScanned=_avgMBScanned
+        self.path=_path
+    def fileWriter(self):
+        content=["Files scanned: ",str(self.totalScanned),"\nNumber of dupes found on scan: ",str(self.numberOfDupes)\
+            ,"\nMb scanned: ",str(self.totalMBScanned),"\nAvg MB scanned ",str(self.avgMBScanned)]
+        file = open(self.path+"stats.txt", "w")
+        file.writelines(content)
+        file.close()
 
 
 class Worker(QRunnable):
@@ -44,8 +59,10 @@ def generate_file_md5(filepath, blocksize=128*2**20):
 def fileChecker(inp, outp, cores, doneq):
     # make our list of files and set duplicates to 0
     files = []
+    sizes=[]
     dupes = 0
-
+    avgSize=0
+    totalMB=0
     # detect GUI or CLI and set parameters
     if len(sys.argv) == 1:
         path = inp
@@ -74,6 +91,12 @@ def fileChecker(inp, outp, cores, doneq):
         p = multiprocessing.Process(target=checker, args=(files[chunksize * i:chunksize * (i + 1)], out_q, doneq, len(files)))
         procs.append(p)
         p.start()
+    #get size of scanned files im MB and compute avg size
+    for file in files:
+        sizes.append(getsize(file)*.000001)
+    totalMB=sum(sizes)
+    avgSize=totalMB/len(files)
+
 
     md5map = {}
     lists = []
@@ -108,6 +131,10 @@ def fileChecker(inp, outp, cores, doneq):
         p.join()
     doneq.put(100)
     print("found " +str(dupes) + " duplicates, moving files and cleaning up!")
+    print("Stats file can be found on output folder")
+    statsF=statsFile(len(files),dupes,totalMB,avgSize,outpath)
+    statsF.fileWriter()
+
 
 
 class EmittingStream(QtCore.QObject):
